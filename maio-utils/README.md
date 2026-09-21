@@ -4,10 +4,10 @@
 
 1. prepare thirdparty by using:
 ```
+install numactl-devel package
 git clone -b threadpool_bind https://github.com/hb-lee/infrastructure.git infrastructure
 git clone -b 1.2.18 https://github.com/HardySimpson/zlog.git thirdparty/zlog
 git clone https://github.com/chriszt/securec.git thirdparty/securec
-git clone -b v2.0.19 https://github.com/numactl/numactl.git thirdparty/libnuma
 ```
 2. cd build
 3. bash build.sh prepare  # only once.

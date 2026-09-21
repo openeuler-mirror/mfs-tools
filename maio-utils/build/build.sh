@@ -54,10 +54,8 @@ function build_libnuma() {
 }
 
 function prepare_thirdparty() {
-	build_jsoncpp
 	build_zlog
 	build_securec
-	build_libnuma
 }
 
 function build_program() {

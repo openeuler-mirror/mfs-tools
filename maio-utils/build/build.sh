@@ -27,11 +27,14 @@ function build_securec() {
 	mkdir -p ${Lib_PATH}/securec
 	cd ${securec_dir}
 	if [ "${ARCH}" = "aarch64" ]; then
+		make -f aarch64-a.mk
 		make -f aarch64-so.mk
 	else
+		make -f x86-a.mk
 		make -f x86-so.mk
 	fi
 	cp -rdp include build/securec
+	cp libsecurec.a build/securec/lib
 	cp libsecurec.so build/securec/lib
 	cp -rdp build/securec/include ${Lib_PATH}/securec
 	cp -rdp build/securec/lib ${Lib_PATH}/securec
@@ -56,6 +59,9 @@ function build_libnuma() {
 function prepare_thirdparty() {
 	build_zlog
 	build_securec
+
+	# remove so files for static library linking
+	find ${Lib_PATH} -name '*.so*' | xargs rm -f
 }
 
 function build_program() {

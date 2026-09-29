@@ -22,8 +22,8 @@
 #include <sys/ioctl.h>
 #include <sys/statfs.h>
 
-#include "../../include/uapi/linux/mfs.h"
-#include "../../include/uapi/linux/magic.h"
+#include "include/uapi/linux/mfs.h"
+#include "include/uapi/linux/magic.h"
 
 #define pr_err(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 

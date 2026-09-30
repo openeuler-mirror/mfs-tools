@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0
 
 CC := gcc
 CFLAGS := -fPIC -Wall -Werror -O2

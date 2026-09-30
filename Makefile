@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0
 # Makefile for mfs demo
 
 CFLAGS = -Wall -Wextra -I /usr/src/kernels/`uname -r`

@@ -29,6 +29,29 @@
 
 static int mfs_mode = -1;
 
+static int process_close(struct mfs_msg *msg)
+{
+	int fd = msg->fd;
+	int ret;
+
+	if (fd < 0)
+		return 0;
+	ret = close(fd);
+	if (ret)
+		perror("close failed");
+
+	return ret;
+}
+
+static int process_open(struct mfs_msg *msg)
+{
+	struct mfs_open *data = (struct mfs_open *)msg->data;
+
+	printf("%s: ino %llu pid %d\n", __func__,
+		data->ino, data->pid);
+	return 0;
+}
+
 static int process_local_read(struct mfs_msg *msg)
 {
 	struct mfs_read *read = (struct mfs_read *)msg->data;
@@ -109,10 +132,13 @@ static int process_req(int fd)
 		pr_err("invalid message length, read:%d, need:%d\n", ret, msg->len);
 		return -1;
 	}
-	if (msg->opcode == MFS_OP_READ || msg->opcode == MFS_OP_FAULT ||
-	    msg->opcode == MFS_OP_FAROUND) {
+	if (msg->opcode == MFS_OP_READ || msg->opcode == MFS_OP_FAULT)
 		return process_read(msg);
-	}
+	if (msg->opcode == MFS_OP_CLOSE)
+		return process_close(msg);
+	if (msg->opcode == MFS_OP_OPEN)
+		return process_open(msg);
+
 	pr_err("invalid opcode:%d\n", msg->opcode);
 	return -1;
 }
@@ -176,7 +202,7 @@ int main(int argc, char *argv[])
 
 		if (ret == 0 || !(pfd.revents & POLLIN)) {
 			pr_err("poll event error, ret:%d, revents:%x\n", ret, pfd.revents);
-			continue;
+			break;
 		}
 
 		if (process_req(fd) == -1)

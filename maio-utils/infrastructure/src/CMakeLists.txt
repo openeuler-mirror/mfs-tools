@@ -34,5 +34,5 @@ link_directories(${LIBNUMA_DIR}/lib)
 #***********************************************************
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-add_library(infra SHARED ${SRC_LIST})
+add_library(infra ${SRC_LIST})
 target_link_libraries(infra zlog securec numa pthread)

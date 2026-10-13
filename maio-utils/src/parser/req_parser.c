@@ -176,9 +176,10 @@ void _process_evict(struct mfs_msg *msg)
 {
 	struct maio_entry *entry;
 	struct mfs_read *read;
+	struct mfs_open *open;
 	uint64_t soff, eoff;
 	struct maio *maio;
-	int ret;
+	int pid, ret;
 
 	if (g_parser_mgr.fs_mode != MFS_MODE_LOCAL)
 		return;
@@ -189,14 +190,22 @@ void _process_evict(struct mfs_msg *msg)
 		return;
 	}
 
-	read = (void *)msg->data;
 	maio->cksz = g_parser_mgr.chunk_size;
-	soff = round_down(read->off, maio->cksz);
-	eoff = round_up(read->off + read->len, maio->cksz);
+	if (msg->opcode == MFS_OP_OPEN) {
+		open = (void *)msg->data;
+		soff = 0;
+		eoff = 0;
+		pid = open->pid;
+	} else {
+		read = (void *)msg->data;
+		soff = round_down(read->off, maio->cksz);
+		eoff = round_up(read->off + read->len, maio->cksz);
+		pid = read->pid;
+	}
 	maio->fd = msg->fd;
-	maio->off = read->off;
+	maio->off = soff;
 	maio->len = eoff - soff;
-	maio->pid = read->pid;
+	maio->pid = pid;
 	maio->op = msg->opcode;
 
 	ret = policy_evict(&maio);
@@ -211,12 +220,13 @@ out:
 	free(maio);
 }
 
-void _parse_read_req(struct mfs_msg *msg)
+void _parse_openread_req(struct mfs_msg *msg)
 {
 	struct mfs_read *read;
+	struct mfs_open *open;
 	struct maio *maio;
 	uint64_t soff, eoff, ts;
-	int ret, io_num = policy_max_io();
+	int pid, ret, io_num = policy_max_io();
 
 	_process_evict(msg);
 
@@ -226,15 +236,24 @@ void _parse_read_req(struct mfs_msg *msg)
 		log_error("failed to alloc maio, num:%d", io_num);
 		return;
 	}
-	read = (void *)msg->data;
+
 	maio->cksz = g_parser_mgr.chunk_size;
-	soff = round_down(read->off, maio->cksz);
-	eoff = round_up(read->off + read->len, maio->cksz);
+	if (msg->opcode == MFS_OP_OPEN) {
+		open = (void *)msg->data;
+		soff = 0;
+		eoff = 0;
+		pid = open->pid;
+	} else {
+		read = (void *)msg->data;
+		soff = round_down(read->off, maio->cksz);
+		eoff = round_up(read->off + read->len, maio->cksz);
+		pid = read->pid;
+	}
 	ts = _get_ts();
 	maio->fd = msg->fd;
 	maio->off = soff;
 	maio->len = eoff - soff;
-	maio->pid = read->pid;
+	maio->pid = pid;
 	maio->op = msg->opcode;
 	maio->ts = ts;
 
@@ -243,8 +262,14 @@ void _parse_read_req(struct mfs_msg *msg)
 	if (ret < 0) {
 		char *path = _get_fullpath(NULL, maio->fd);
 		if (path) {
-			log_warn("io on path:%s%s offset:%lu length:%lu dropped",
-				 g_parser_mgr.mntpoint, path, read->off, read->len);
+			if (msg->opcode == MFS_OP_OPEN) {
+				log_warn("open on path:%s%s dropped",
+					g_parser_mgr.mntpoint, path);
+			} else {
+				read = (void *)msg->data; /* fix Werror=maybe-uninitialized */
+				log_warn("io on path:%s%s offset:%lu length:%lu dropped",
+					g_parser_mgr.mntpoint, path, read->off, read->len);
+			}
 			free(path);
 		}
 		free(maio);
@@ -259,7 +284,7 @@ void _parse_read_req(struct mfs_msg *msg)
 	maio->off = soff;
 	maio->len = eoff - soff;
 	maio->cksz = g_parser_mgr.chunk_size;
-	maio->pid = read->pid;
+	maio->pid = pid;
 	maio->op = msg->opcode;
 	maio->ts = ts;
 
@@ -272,8 +297,9 @@ void _parse_one_req(void *buf)
 {
 	struct mfs_msg *msg = (struct mfs_msg *)buf;
 
-	if (msg->opcode == MFS_OP_READ || msg->opcode == MFS_OP_FAULT)
-		_parse_read_req(msg);
+	if (msg->opcode == MFS_OP_READ || msg->opcode == MFS_OP_FAULT ||
+		msg->opcode == MFS_OP_OPEN)
+		_parse_openread_req(msg);
 
 	free(buf);
 }

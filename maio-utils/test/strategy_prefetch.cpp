@@ -15,6 +15,7 @@ using namespace std;
 
 struct prefetch_mgr {
     map<string, uint64_t> files;
+    bool is_done;
 };
 
 struct prefetch_mgr g_prefetch;
@@ -61,6 +62,7 @@ int prefetch_init(void)
         return -1;
     }
 
+    g_prefetch.is_done = false;
     if (get_files(parent) != 0) {
         cout<<"get all files failed"<<endl;
         return -1;
@@ -111,6 +113,11 @@ int prefetch_load(struct maio **io)
     pthread_t t0;
     int ret;
 
+    if (g_prefetch.is_done)
+        return 0;
+    else
+        g_prefetch.is_done = true;
+
     for (it = g_prefetch.files.begin(); it != g_prefetch.files.end(); ++it) {
         ctx = (struct thread_ctx *)malloc(sizeof(struct thread_ctx));
         if (!ctx) {
@@ -124,7 +131,6 @@ int prefetch_load(struct maio **io)
         if (ret == 0)
             pthread_detach(t0);
     }
-    g_prefetch.files.clear();
 
     return 0;
 }

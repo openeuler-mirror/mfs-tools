@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /* Copyright(c) 2025 Huawei Technologies Co., Ltd
  */
 #ifndef _LOADER_H_

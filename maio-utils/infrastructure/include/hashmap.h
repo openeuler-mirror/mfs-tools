@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Created by Hongbo Li <lihb2113@outlook.com>
  */
